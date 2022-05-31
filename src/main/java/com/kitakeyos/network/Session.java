@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  * @author Admin
  */
 public class Session implements ISession {
-    
+
     private byte[] key;
     public Socket sc;
     public DataInputStream dis;
@@ -41,7 +41,7 @@ public class Session implements ISession {
     protected int width;
     protected int height;
     protected String platform;
-    
+
     public Session(Socket sc, int id) throws IOException {
         this.sc = sc;
         this.id = id;
@@ -54,12 +54,12 @@ public class Session implements ISession {
         collectorThread = new Thread(new MessageCollector());
         collectorThread.start();
     }
-    
+
     @Override
     public void setService(Service service) {
         this.service = service;
     }
-    
+
     public void setProfile(Message mss) {
         try {
             this.width = mss.reader().readShort();
@@ -73,7 +73,7 @@ public class Session implements ISession {
             Logger.getLogger(Session.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void requestImageMap(Message mss) {
         try {
             int size = mss.reader().readShort();
@@ -86,7 +86,7 @@ public class Session implements ISession {
             Logger.getLogger(Session.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void requestMobTemplate(Message mss) {
         try {
             short mobID = mss.reader().readShort();
@@ -95,11 +95,11 @@ public class Session implements ISession {
             Logger.getLogger(Session.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void requestData() {
         service.setData();
     }
-    
+
     public void loadEffectAll(Message mss) {
         try {
             short id = mss.reader().readShort();
@@ -108,7 +108,7 @@ public class Session implements ISession {
             Logger.getLogger(Session.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void requestImage(Message mss) {
         try {
             byte type = mss.reader().readByte();
@@ -118,7 +118,7 @@ public class Session implements ISession {
             Logger.getLogger(Session.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void setVersionData() {
         File file = new File(String.format("resources/x%d/big/", zoomLevel));
         File[] files = file.listFiles();
@@ -133,7 +133,7 @@ public class Session implements ISession {
         }
         service.setVersionData(maps);
     }
-    
+
     public void login(Message mss) {
         try {
             String username = mss.reader().readUTF();
@@ -170,7 +170,7 @@ public class Session implements ISession {
                 _c.setY((short) 10);
                 service.loadAll(_c);
                 service.mapInfo(_c);
-                
+
             } else if (t == User.LOGIN_INCORRECT) {
                 service.loginFail("Tài khoản hoặc mật khẩu không chính xác!");
             }
@@ -178,22 +178,22 @@ public class Session implements ISession {
             Logger.getLogger(Session.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     @Override
     public boolean isConnected() {
         return connected;
     }
-    
+
     @Override
     public void setHandler(IMessageHandler messageHandler) {
         this.messageHandler = messageHandler;
     }
-    
+
     @Override
     public void sendMessage(Message message) {
         sender.addMessage(message);
     }
-    
+
     protected synchronized void doSendMessage(Message m) throws IOException {
         if (m == null) {
             return;
@@ -213,11 +213,16 @@ public class Session implements ISession {
                     dos.writeByte((byte) num);
                     int num2 = writeKey((byte) (size >> 16));
                     dos.writeByte((byte) num2);
+                    int num3 = writeKey((byte) (size >> 8));
+                    dos.writeByte((byte) num3);
+                    int num4 = writeKey((byte) (size & 255));
+                    dos.writeByte((byte) num4);
+                } else {
+                    int num3 = writeKey((byte) (size >> 8));
+                    dos.writeByte((byte) num3);
+                    int num4 = writeKey((byte) (size & 255));
+                    dos.writeByte((byte) num4);
                 }
-                int num3 = writeKey((byte) (size >> 8));
-                dos.writeByte((byte) num3);
-                int num4 = writeKey((byte) (size & 255));
-                dos.writeByte((byte) num4);
             } else {
                 if (b == Cmd.REQUEST_IMAGE_MAP || b == Cmd.ATTACK || b == Cmd.LOAD_MOB_TEMPLATE || b == Cmd.LOAD_OBS_TEMPLATE || b == Cmd.LOAD_EFFECT_ALL || b == Cmd.FRIEND_LIST) {
                     dos.writeInt(size);
@@ -236,7 +241,7 @@ public class Session implements ISession {
         dos.flush();
         m.cleanup();
     }
-    
+
     private byte readKey(byte b) {
         byte b2 = curR;
         curR = (byte) (b2 + 1);
@@ -246,7 +251,7 @@ public class Session implements ISession {
         }
         return result;
     }
-    
+
     private byte writeKey(byte b) {
         byte b2 = curW;
         curW = (byte) (b2 + 1);
@@ -256,7 +261,7 @@ public class Session implements ISession {
         }
         return result;
     }
-    
+
     @Override
     public void close() {
         try {
@@ -268,7 +273,7 @@ public class Session implements ISession {
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public void disconnect() {
         if (sc != null && sc.isConnected()) {
@@ -279,7 +284,7 @@ public class Session implements ISession {
             }
         }
     }
-    
+
     private void cleanNetwork() {
         curR = 0;
         curW = 0;
@@ -311,16 +316,16 @@ public class Session implements ISession {
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public String toString() {
         return "Client " + this.id;
     }
-    
+
     public void generateKey(int size) {
         this.key = "kitakeyos".getBytes();
     }
-    
+
     public void sendKey() throws IOException {
         if (connected) {
             return;
@@ -338,19 +343,19 @@ public class Session implements ISession {
         connected = true;
         sendThread.start();
     }
-    
+
     private class Sender implements Runnable {
-        
+
         private final ArrayList<Message> sendingMessage;
-        
+
         public Sender() {
             sendingMessage = new ArrayList<>();
         }
-        
+
         public void addMessage(Message message) {
             sendingMessage.add(message);
         }
-        
+
         @Override
         public void run() {
             try {
@@ -371,9 +376,9 @@ public class Session implements ISession {
             }
         }
     }
-    
+
     class MessageCollector implements Runnable {
-        
+
         @Override
         public void run() {
             while (!sc.isClosed() && dis != null) {
@@ -399,7 +404,7 @@ public class Session implements ISession {
             }
             close();
         }
-        
+
         private Message readMessage() throws IOException {
             // read message command
             byte cmd = dis.readByte();
@@ -429,10 +434,10 @@ public class Session implements ISession {
                     data[i] = readKey(data[i]);
                 }
             }
-            
+
             Message msg = new Message(cmd, data);
             return msg;
         }
     }
-    
+
 }
